@@ -43,13 +43,8 @@ $fn_gestionar_usuarios$ LANGUAGE plpgsql;
 CREATE OR REPLACE FUNCTION fn_restringir_edicion() RETURNS TRIGGER AS $fn_restringir_edicion$
   DECLARE
   BEGIN
-    IF NEW.usuario_nombre_usuario != session_user AND current_setting('role') = 'Cliente' THEN
+    IF NEW.usuario_nombre_usuario != session_user AND session_user IN (SELECT nombre_usuario FROM tienda.vista_usuarios_cliente) THEN
       RAISE EXCEPTION 'El usuario no puede insertar, modificar o borrar tuplas de otros usuarios';
-    ELSE
-      RAISE NOTICE 'El usuario ha insertado, modificado o borrado una tupla';
-      RAISE NOTICE 'Usuario a cambiar: %', NEW.usuario_nombre_usuario;
-      RAISE NOTICE 'Usuario actual: %', session_user;
-      RAISE NOTICE 'Rol actual: %', current_setting('role');
     END IF;
     RETURN NEW;
   END;
@@ -66,10 +61,10 @@ CREATE OR REPLACE FUNCTION fn_tienes_lo_que_deseas() RETURNS TRIGGER AS $fn_tien
     RETURN NULL;
   END;
 $fn_tienes_lo_que_deseas$ LANGUAGE plpgsql;
-CREATE TRIGGER tg_tienes_lo_que_deseas AFTER INSERT ON tienda.UTieneE FOR EACH ROW EXECUTE PROCEDURE fn_tienes_lo_que_deseas();
-CREATE TRIGGER tg_gestionar_usuarios AFTER INSERT OR DELETE ON tienda.Usuarios FOR EACH ROW EXECUTE PROCEDURE fn_gestionar_usuarios();
-CREATE TRIGGER tg_restringir_edicion BEFORE INSERT OR UPDATE OR DELETE ON tienda.UTieneE FOR EACH ROW EXECUTE PROCEDURE fn_restringir_edicion();
-CREATE TRIGGER tg_restringir_edicion BEFORE INSERT OR UPDATE OR DELETE ON tienda.UDeseaD FOR EACH ROW EXECUTE PROCEDURE fn_restringir_edicion();
+CREATE OR REPLACE TRIGGER tg_tienes_lo_que_deseas AFTER INSERT ON tienda.UTieneE FOR EACH ROW EXECUTE PROCEDURE fn_tienes_lo_que_deseas();
+CREATE OR REPLACE TRIGGER tg_gestionar_usuarios AFTER INSERT OR DELETE ON tienda.Usuarios FOR EACH ROW EXECUTE PROCEDURE fn_gestionar_usuarios();
+CREATE OR REPLACE TRIGGER tg_restringir_edicion BEFORE INSERT OR UPDATE OR DELETE ON tienda.UTieneE FOR EACH ROW EXECUTE PROCEDURE fn_restringir_edicion();
+CREATE OR REPLACE TRIGGER tg_restringir_edicion BEFORE INSERT OR UPDATE OR DELETE ON tienda.UDeseaD FOR EACH ROW EXECUTE PROCEDURE fn_restringir_edicion();
 DO $$
 DECLARE
     r RECORD;

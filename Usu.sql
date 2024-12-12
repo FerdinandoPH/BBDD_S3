@@ -19,7 +19,7 @@ REVOKE SELECT ON tienda.Usuarios FROM Cliente;
 
 CREATE ROLE Invitado WITH NOSUPERUSER;
 GRANT USAGE ON SCHEMA tienda TO Invitado;
-GRANT SELECT ON TABLE tienda.Grupos, tienda.Discos, tienda.Canciones TO Invitado;
+GRANT SELECT ON TABLE tienda.Grupos, tienda.Discos, tienda.Canciones, tienda.vista_usuarios_cliente TO Invitado;
 
 CREATE USER suMajestad WITH PASSWORD '1234';
 GRANT Administrador TO suMajestad;
