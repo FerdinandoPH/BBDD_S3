@@ -110,11 +110,10 @@ DROP TABLE temp_canciones;
 
 CREATE TABLE IF NOT EXISTS tienda.Usuarios (
     nombre_usuario TEXT,
-    email TEXT NOT NULL CHECK (email ~ '^[A-Za-z0-9áÁéÉíÍóÓúÚüÜñÑ._%+-]+@[A-Za-z0-9áÁéÉíÍóÓúÚüÜñÑ.-]+\.[A-Za-z]{2,}$'),
+    email TEXT NOT NULL, --CHECK (email ~ '^[A-Za-z0-9áÁéÉíÍóÓúÚüÜñÑ._%+-]+@[A-Za-z0-9áÁéÉíÍóÓúÚüÜñÑ.-]+\.[A-Za-z]{2,}$'),
     nombre TEXT NOT NULL,
     contrasena TEXT NOT NULL,
-    PRIMARY KEY (nombre_usuario),
-    ON UPDATE RESTRICT
+    PRIMARY KEY (nombre_usuario)
 );
 
 CREATE TABLE IF NOT EXISTS tienda.Grupos (

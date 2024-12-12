@@ -5,11 +5,14 @@ CREATE ROLE Administrador WITH SUPERUSER;
 
 CREATE ROLE Gestor WITH NOSUPERUSER;
 GRANT USAGE ON SCHEMA tienda TO Gestor;
+GRANT USAGE, SELECT ON SEQUENCE tienda.auditoria_id_seq TO Gestor;
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA tienda TO Gestor;
 
 CREATE ROLE Cliente WITH NOSUPERUSER;
 GRANT USAGE ON SCHEMA tienda TO Cliente;
-GRANT INSERT ON TABLE tienda.UTieneE, tienda.UDeseaD TO Cliente;
+GRANT USAGE, SELECT ON SEQUENCE tienda.auditoria_id_seq TO Cliente;
+GRANT INSERT ON TABLE tienda.UTieneE, tienda.UDeseaD, tienda.auditoria TO Cliente;
+GRANT DELETE ON tienda.UDeseaD, tienda.UTieneE TO Cliente;
 GRANT SELECT ON ALL TABLES IN SCHEMA tienda TO Cliente;
 REVOKE SELECT ON tienda.Usuarios FROM Cliente;
 

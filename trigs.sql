@@ -27,8 +27,49 @@ CREATE OR REPLACE FUNCTION fn_auditoria() RETURNS TRIGGER AS $fn_auditoria$
   END;
 $fn_auditoria$ LANGUAGE plpgsql;
 
--- Se crea el trigger que se dispara cuando hay una inserción, modificación o borrado en la tabla sala
+CREATE OR REPLACE FUNCTION fn_gestionar_usuarios() RETURNS TRIGGER AS $fn_gestionar_usuarios$
+  DECLARE
+  BEGIN
+    IF TG_OP='INSERT' THEN
+      EXECUTE format('CREATE USER %I WITH PASSWORD %L', NEW.nombre_usuario, NEW.contrasena);
+      EXECUTE format('GRANT Cliente TO %I', NEW.nombre_usuario);
+    ELSIF TG_OP='DELETE' THEN
+      EXECUTE format('DROP USER %I', OLD.nombre_usuario);
+    END IF;
+    RETURN NULL;
+  END;
+$fn_gestionar_usuarios$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION fn_restringir_edicion() RETURNS TRIGGER AS $fn_restringir_edicion$
+  DECLARE
+  BEGIN
+    IF NEW.usuario_nombre_usuario != session_user AND current_setting('role') = 'Cliente' THEN
+      RAISE EXCEPTION 'El usuario no puede insertar, modificar o borrar tuplas de otros usuarios';
+    ELSE
+      RAISE NOTICE 'El usuario ha insertado, modificado o borrado una tupla';
+      RAISE NOTICE 'Usuario a cambiar: %', NEW.usuario_nombre_usuario;
+      RAISE NOTICE 'Usuario actual: %', session_user;
+      RAISE NOTICE 'Rol actual: %', current_setting('role');
+    END IF;
+    RETURN NEW;
+  END;
+$fn_restringir_edicion$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION fn_tienes_lo_que_deseas() RETURNS TRIGGER AS $fn_tienes_lo_que_deseas$
+  DECLARE
+  BEGIN
+    IF TG_OP='INSERT' THEN
+      IF EXISTS (SELECT * FROM tienda.UDeseaD WHERE usuario_nombre_usuario = NEW.usuario_nombre_usuario AND disco_titulo = NEW.disco_titulo AND disco_anno_publicacion = NEW.disco_anno_publicacion) THEN
+        DELETE FROM tienda.UDeseaD WHERE usuario_nombre_usuario = NEW.usuario_nombre_usuario AND disco_titulo = NEW.disco_titulo AND disco_anno_publicacion = NEW.disco_anno_publicacion;
+      END IF;
+    END IF;
+    RETURN NULL;
+  END;
+$fn_tienes_lo_que_deseas$ LANGUAGE plpgsql;
+CREATE TRIGGER tg_tienes_lo_que_deseas AFTER INSERT ON tienda.UTieneE FOR EACH ROW EXECUTE PROCEDURE fn_tienes_lo_que_deseas();
+CREATE TRIGGER tg_gestionar_usuarios AFTER INSERT OR DELETE ON tienda.Usuarios FOR EACH ROW EXECUTE PROCEDURE fn_gestionar_usuarios();
+CREATE TRIGGER tg_restringir_edicion BEFORE INSERT OR UPDATE OR DELETE ON tienda.UTieneE FOR EACH ROW EXECUTE PROCEDURE fn_restringir_edicion();
+CREATE TRIGGER tg_restringir_edicion BEFORE INSERT OR UPDATE OR DELETE ON tienda.UDeseaD FOR EACH ROW EXECUTE PROCEDURE fn_restringir_edicion();
 DO $$
 DECLARE
     r RECORD;
@@ -41,5 +82,4 @@ BEGIN
         EXECUTE format('CREATE TRIGGER tg_auditoria_%I AFTER INSERT OR UPDATE OR DELETE ON tienda.%I FOR EACH ROW EXECUTE PROCEDURE fn_auditoria();', r.tablename, r.tablename);
     END LOOP;
 END $$;
-\q
-ROLLBACK;
+COMMIT;
