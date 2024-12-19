@@ -15,17 +15,15 @@ END $$;
 
 DROP USER forastero;
 
-REASSIGN OWNED BY Administrador TO postgres;
 REASSIGN OWNED BY Gestor TO postgres;
 REASSIGN OWNED BY Cliente TO postgres;
 REASSIGN OWNED BY Invitado TO postgres;
 
-DROP OWNED BY Administrador;
 DROP OWNED BY Gestor;
 DROP OWNED BY Cliente;
 DROP OWNED BY Invitado;
 
-DROP ROLE Administrador;
+
 DROP ROLE Gestor;
 DROP ROLE Cliente;
 DROP ROLE Invitado;

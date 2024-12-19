@@ -118,14 +118,14 @@ CREATE TABLE IF NOT EXISTS tienda.Usuarios (
 
 CREATE TABLE IF NOT EXISTS tienda.Grupos (
     nombre TEXT,
-    enlace TEXT CHECK (enlace ~ '^(http|https):\/\/[^\s/$.?#].[^\s]*$'),
+    enlace TEXT CHECK (enlace IS NOT NULL AND enlace ~ '^(http|https):\/\/[^\s/$.?#].[^\s]*$'),
     PRIMARY KEY (nombre)
 );
 
 CREATE TABLE IF NOT EXISTS tienda.Discos(
     titulo TEXT,
     anno_publicacion INTEGER,
-    enlace_portada TEXT CHECK (enlace_portada ~ '^(http|https):\/\/[^\s/$.?#].[^\s]*$'),
+    enlace_portada TEXT CHECK (enlace_portada IS NOT NULL AND enlace_portada ~ '^(http|https):\/\/[^\s/$.?#].[^\s]*$'),
     grupo_nombre TEXT,
     PRIMARY KEY (titulo, anno_publicacion),
     FOREIGN KEY (grupo_nombre) REFERENCES tienda.Grupos(nombre)
