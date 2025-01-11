@@ -25,7 +25,7 @@ CREATE USER suMajestad WITH PASSWORD '1234' SUPERUSER;
 CREATE USER virrey WITH PASSWORD 'ABCD';
 GRANT Gestor TO virrey;
 
-DO $$
+DO $$ --En vez de crear un usuario con el rol Cliente, usamos los clientes de la tabla Usuarios
 DECLARE
     ent RECORD;
 BEGIN

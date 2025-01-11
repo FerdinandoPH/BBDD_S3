@@ -1,3 +1,0 @@
-1: Hacer que los usuarios solo puedan modificar sus entradas de UTieneE y UDeseaD
-2: Todo lo de python
-3: Consistencia al sql

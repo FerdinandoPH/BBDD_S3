@@ -9,25 +9,14 @@ BEGIN;
 
 CREATE OR REPLACE FUNCTION fn_auditoria() RETURNS TRIGGER AS $fn_auditoria$
   DECLARE
-  --  no declaro nada porque no me hace falta...de hecho DECLARE podría haberlo omitido en éste caso
   BEGIN
-  -- Se determina que acción a activado el trigger e inserta un nuevo valor en la tabla dependiendo
-  -- del dicha acción
-  -- Junto con la acción se escribe fecha y hora en la que se ha producido la acción
-  --  IF TG_OP='INSERT' THEN
-  --    INSERT INTO auditoria VALUES ('alta',current_timestamp);  -- Cuando hay una inserción
-  --  ELSIF TG_OP='UPDATE'	THEN
-  --    INSERT INTO auditoria VALUES ('modificación',current_timestamp); -- Cuando hay una modificación
-  --  ELSIF TG_OP='DELETE' THEN
-  --    INSERT INTO auditoria VALUES ('borrado',current_timestamp); -- Cuando hay un borrado
-  --  END IF;	 
    INSERT INTO tienda.auditoria (tabla_afectada, accion, usuario, fecha)
    VALUES (TG_TABLE_NAME, TG_OP, session_user,current_timestamp); -- Cuando hay una inserción, modificación o borrado
    RETURN NULL;
   END;
 $fn_auditoria$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION fn_gestionar_usuarios() RETURNS TRIGGER AS $fn_gestionar_usuarios$
+CREATE OR REPLACE FUNCTION fn_gestionar_usuarios() RETURNS TRIGGER AS $fn_gestionar_usuarios$ --Al añadir/borrar un usuario de la tabla Usuarios, se crea/elimina un usuario con el rol Cliente en la base de datos
   DECLARE
   BEGIN
     IF TG_OP='INSERT' THEN
@@ -40,7 +29,7 @@ CREATE OR REPLACE FUNCTION fn_gestionar_usuarios() RETURNS TRIGGER AS $fn_gestio
   END;
 $fn_gestionar_usuarios$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION fn_restringir_edicion() RETURNS TRIGGER AS $fn_restringir_edicion$
+CREATE OR REPLACE FUNCTION fn_restringir_edicion() RETURNS TRIGGER AS $fn_restringir_edicion$ --Impide que un usuario modifique o borre tuplas de otros usuarios en UTieneE y UDeseaD
   DECLARE
   BEGIN
     IF NEW.usuario_nombre_usuario != session_user AND session_user IN (SELECT nombre_usuario FROM tienda.vista_usuarios_cliente) THEN
@@ -50,21 +39,32 @@ CREATE OR REPLACE FUNCTION fn_restringir_edicion() RETURNS TRIGGER AS $fn_restri
   END;
 $fn_restringir_edicion$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION fn_tienes_lo_que_deseas() RETURNS TRIGGER AS $fn_tienes_lo_que_deseas$
+CREATE OR REPLACE FUNCTION fn_tienes_lo_que_deseas() RETURNS TRIGGER AS $fn_tienes_lo_que_deseas$ -- Si un usuario añade un disco a UTieneE que ya tiene en UDeseaD, se elimina de UDeseaD
   DECLARE
   BEGIN
     IF TG_OP='INSERT' THEN
       IF EXISTS (SELECT * FROM tienda.UDeseaD WHERE usuario_nombre_usuario = NEW.usuario_nombre_usuario AND disco_titulo = NEW.disco_titulo AND disco_anno_publicacion = NEW.disco_anno_publicacion) THEN
         DELETE FROM tienda.UDeseaD WHERE usuario_nombre_usuario = NEW.usuario_nombre_usuario AND disco_titulo = NEW.disco_titulo AND disco_anno_publicacion = NEW.disco_anno_publicacion;
+        RAISE NOTICE 'El disco % ha sido eliminado de UDeseaD', NEW.disco_titulo;
       END IF;
     END IF;
     RETURN NULL;
   END;
 $fn_tienes_lo_que_deseas$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION fn_ultimo_id() RETURNS TRIGGER AS $fn_ultimo_id$ -- Hace que al añadir una entrada a UTieneE se use el id de la última entrada de la tabla
+  DECLARE
+  BEGIN
+    NEW.id = (SELECT MAX(id) FROM tienda.UTieneE) + 1;
+    RETURN NEW;
+  END;
+$fn_ultimo_id$ LANGUAGE plpgsql;
+
 CREATE OR REPLACE TRIGGER tg_tienes_lo_que_deseas AFTER INSERT ON tienda.UTieneE FOR EACH ROW EXECUTE PROCEDURE fn_tienes_lo_que_deseas();
 CREATE OR REPLACE TRIGGER tg_gestionar_usuarios AFTER INSERT OR DELETE ON tienda.Usuarios FOR EACH ROW EXECUTE PROCEDURE fn_gestionar_usuarios();
 CREATE OR REPLACE TRIGGER tg_restringir_edicion BEFORE INSERT OR UPDATE OR DELETE ON tienda.UTieneE FOR EACH ROW EXECUTE PROCEDURE fn_restringir_edicion();
 CREATE OR REPLACE TRIGGER tg_restringir_edicion BEFORE INSERT OR UPDATE OR DELETE ON tienda.UDeseaD FOR EACH ROW EXECUTE PROCEDURE fn_restringir_edicion();
+CREATE OR REPLACE TRIGGER tg_ultimo_id BEFORE INSERT ON tienda.UTieneE FOR EACH ROW EXECUTE PROCEDURE fn_ultimo_id();
 DO $$
 DECLARE
     r RECORD;
