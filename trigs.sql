@@ -40,7 +40,8 @@ CREATE OR REPLACE FUNCTION fn_restringir_edicion() RETURNS TRIGGER AS $fn_restri
   DECLARE
   BEGIN
     IF NEW.usuario_nombre_usuario != session_user AND session_user IN (SELECT nombre_usuario FROM tienda.vista_usuarios_cliente) THEN
-      RAISE EXCEPTION 'El usuario no puede insertar, modificar o borrar tuplas de otros usuarios';
+      RAISE NOTICE 'El usuario no puede insertar, modificar o borrar tuplas de otros usuarios';
+      RETURN NULL;
     END IF;
     IF TG_OP='DELETE' THEN
       RETURN OLD;
