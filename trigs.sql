@@ -24,6 +24,13 @@ CREATE OR REPLACE FUNCTION fn_gestionar_usuarios() RETURNS TRIGGER AS $fn_gestio
       EXECUTE format('GRANT Cliente TO %I', NEW.nombre_usuario);
     ELSIF TG_OP='DELETE' THEN
       EXECUTE format('DROP USER %I', OLD.nombre_usuario);
+    ELSIF TG_OP='UPDATE' THEN
+      IF OLD.nombre_usuario != NEW.nombre_usuario THEN
+        EXECUTE format('ALTER USER %I RENAME TO %I', OLD.nombre_usuario, NEW.nombre_usuario);
+      END IF;
+      IF OLD.contrasena != NEW.contrasena THEN
+        EXECUTE format('ALTER USER %I WITH PASSWORD %L', NEW.nombre_usuario, NEW.contrasena);
+      END IF;
     END IF;
     RETURN NULL;
   END;
@@ -35,7 +42,11 @@ CREATE OR REPLACE FUNCTION fn_restringir_edicion() RETURNS TRIGGER AS $fn_restri
     IF NEW.usuario_nombre_usuario != session_user AND session_user IN (SELECT nombre_usuario FROM tienda.vista_usuarios_cliente) THEN
       RAISE EXCEPTION 'El usuario no puede insertar, modificar o borrar tuplas de otros usuarios';
     END IF;
-    RETURN NEW;
+    IF TG_OP='DELETE' THEN
+      RETURN OLD;
+    ELSE
+      RETURN NEW;
+    END IF;
   END;
 $fn_restringir_edicion$ LANGUAGE plpgsql;
 
@@ -61,7 +72,7 @@ CREATE OR REPLACE FUNCTION fn_ultimo_id() RETURNS TRIGGER AS $fn_ultimo_id$ -- H
 $fn_ultimo_id$ LANGUAGE plpgsql;
 
 CREATE OR REPLACE TRIGGER tg_tienes_lo_que_deseas AFTER INSERT ON tienda.UTieneE FOR EACH ROW EXECUTE PROCEDURE fn_tienes_lo_que_deseas();
-CREATE OR REPLACE TRIGGER tg_gestionar_usuarios AFTER INSERT OR DELETE ON tienda.Usuarios FOR EACH ROW EXECUTE PROCEDURE fn_gestionar_usuarios();
+CREATE OR REPLACE TRIGGER tg_gestionar_usuarios AFTER INSERT OR UPDATE OR DELETE ON tienda.Usuarios FOR EACH ROW EXECUTE PROCEDURE fn_gestionar_usuarios();
 CREATE OR REPLACE TRIGGER tg_restringir_edicion BEFORE INSERT OR UPDATE OR DELETE ON tienda.UTieneE FOR EACH ROW EXECUTE PROCEDURE fn_restringir_edicion();
 CREATE OR REPLACE TRIGGER tg_restringir_edicion BEFORE INSERT OR UPDATE OR DELETE ON tienda.UDeseaD FOR EACH ROW EXECUTE PROCEDURE fn_restringir_edicion();
 CREATE OR REPLACE TRIGGER tg_ultimo_id BEFORE INSERT ON tienda.UTieneE FOR EACH ROW EXECUTE PROCEDURE fn_ultimo_id();
